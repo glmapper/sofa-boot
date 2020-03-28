@@ -16,10 +16,9 @@
  */
 package com.alipay.sofa.rpc.boot.runtime.adapter;
 
-import com.alipay.sofa.rpc.boot.container.ConsumerConfigContainer;
-import com.alipay.sofa.rpc.boot.container.ProviderConfigContainer;
-import com.alipay.sofa.rpc.boot.runtime.adapter.helper.ConsumerConfigHelper;
-import com.alipay.sofa.rpc.boot.runtime.adapter.helper.ProviderConfigHelper;
+import java.util.List;
+
+import com.alipay.sofa.rpc.boot.container.SpringBridge;
 import com.alipay.sofa.rpc.boot.runtime.binding.RpcBinding;
 import com.alipay.sofa.rpc.boot.runtime.param.RpcBindingParam;
 import com.alipay.sofa.rpc.config.ConsumerConfig;
@@ -33,9 +32,6 @@ import com.alipay.sofa.runtime.api.ServiceRuntimeException;
 import com.alipay.sofa.runtime.spi.binding.BindingAdapter;
 import com.alipay.sofa.runtime.spi.binding.Contract;
 import com.alipay.sofa.runtime.spi.component.SofaRuntimeContext;
-import org.springframework.context.ApplicationContext;
-
-import java.util.List;
 
 /**
  * 根据 {@link RpcBindingParam} 生效上层配置到 SOFARPC 组件中。
@@ -56,18 +52,12 @@ public abstract class RpcBindingAdapter implements BindingAdapter<RpcBinding> {
     @Override
     public void preOutBinding(Object contract, RpcBinding binding, Object target,
                               SofaRuntimeContext sofaRuntimeContext) {
-
-        ApplicationContext applicationContext = sofaRuntimeContext.getSofaRuntimeManager()
-            .getRootApplicationContext();
-        ProviderConfigContainer providerConfigContainer = applicationContext
-            .getBean(ProviderConfigContainer.class);
-        String uniqueName = providerConfigContainer.createUniqueName((Contract) contract, binding);
-        ProviderConfigHelper providerConfigHelper = applicationContext
-            .getBean(ProviderConfigHelper.class);
-        ProviderConfig providerConfig = providerConfigHelper.getProviderConfig((Contract) contract,
-            binding, target);
+        String uniqueName = SpringBridge.getProviderConfigContainer().createUniqueName(
+            (Contract) contract, binding);
+        ProviderConfig providerConfig = SpringBridge.getProviderConfigHelper().getProviderConfig(
+            (Contract) contract, binding, target);
         try {
-            providerConfigContainer.addProviderConfig(uniqueName, providerConfig);
+            SpringBridge.getProviderConfigContainer().addProviderConfig(uniqueName, providerConfig);
         } catch (Exception e) {
             throw new ServiceRuntimeException(LogCodes.getLog(LogCodes.ERROR_PROXY_PUBLISH_FAIL), e);
         }
@@ -86,13 +76,10 @@ public abstract class RpcBindingAdapter implements BindingAdapter<RpcBinding> {
     public Object outBinding(Object contract, RpcBinding binding, Object target,
                              SofaRuntimeContext sofaRuntimeContext) {
 
-        ApplicationContext applicationContext = sofaRuntimeContext.getSofaRuntimeManager()
-            .getRootApplicationContext();
-        ProviderConfigContainer providerConfigContainer = applicationContext
-            .getBean(ProviderConfigContainer.class);
-
-        String uniqueName = providerConfigContainer.createUniqueName((Contract) contract, binding);
-        ProviderConfig providerConfig = providerConfigContainer.getProviderConfig(uniqueName);
+        String uniqueName = SpringBridge.getProviderConfigContainer().createUniqueName(
+            (Contract) contract, binding);
+        ProviderConfig providerConfig = SpringBridge.getProviderConfigContainer()
+            .getProviderConfig(uniqueName);
 
         if (providerConfig == null) {
             throw new ServiceRuntimeException(LogCodes.getLog(
@@ -105,7 +92,7 @@ public abstract class RpcBindingAdapter implements BindingAdapter<RpcBinding> {
             throw new ServiceRuntimeException(LogCodes.getLog(LogCodes.ERROR_PROXY_PUBLISH_FAIL), e);
         }
 
-        if (providerConfigContainer.isAllowPublish()) {
+        if (SpringBridge.getProviderConfigContainer().isAllowPublish()) {
             providerConfig.setRegister(true);
             List<RegistryConfig> registrys = providerConfig.getRegistry();
             for (RegistryConfig registryConfig : registrys) {
@@ -129,14 +116,8 @@ public abstract class RpcBindingAdapter implements BindingAdapter<RpcBinding> {
     @Override
     public void preUnoutBinding(Object contract, RpcBinding binding, Object target,
                                 SofaRuntimeContext sofaRuntimeContext) {
-
-        ApplicationContext applicationContext = sofaRuntimeContext.getSofaRuntimeManager()
-            .getRootApplicationContext();
-        ProviderConfigHelper providerConfigHelper = applicationContext
-            .getBean(ProviderConfigHelper.class);
-
-        ProviderConfig providerConfig = providerConfigHelper.getProviderConfig((Contract) contract,
-            binding, target);
+        ProviderConfig providerConfig = SpringBridge.getProviderConfigHelper().getProviderConfig(
+            (Contract) contract, binding, target);
         try {
             providerConfig.unExport();
         } catch (Exception e) {
@@ -156,23 +137,17 @@ public abstract class RpcBindingAdapter implements BindingAdapter<RpcBinding> {
     @Override
     public void postUnoutBinding(Object contract, RpcBinding binding, Object target,
                                  SofaRuntimeContext sofaRuntimeContext) {
-
-        ApplicationContext applicationContext = sofaRuntimeContext.getSofaRuntimeManager()
-            .getRootApplicationContext();
-        ProviderConfigHelper providerConfigHelper = applicationContext
-            .getBean(ProviderConfigHelper.class);
-        ProviderConfigContainer providerConfigContainer = applicationContext
-            .getBean(ProviderConfigContainer.class);
-
-        ProviderConfig metadata = providerConfigHelper.getProviderConfig((Contract) contract,
-            binding, target);
+        ProviderConfig metadata = SpringBridge.getProviderConfigHelper().getProviderConfig(
+            (Contract) contract, binding, target);
         try {
-            String key = providerConfigContainer.createUniqueName((Contract) contract, binding);
-            List<ServerConfig> servers = providerConfigContainer.getProviderConfig(key).getServer();
+            String key = SpringBridge.getProviderConfigContainer().createUniqueName(
+                (Contract) contract, binding);
+            List<ServerConfig> servers = SpringBridge.getProviderConfigContainer()
+                .getProviderConfig(key).getServer();
             for (ServerConfig server : servers) {
                 server.getServer().unRegisterProcessor(metadata, false);
             }
-            providerConfigContainer.removeProviderConfig(key);
+            SpringBridge.getProviderConfigContainer().removeProviderConfig(key);
         } catch (Exception e) {
             throw new ServiceRuntimeException(
                 LogCodes.getLog(LogCodes.ERROR_PROXY_POST_UNPUBLISH_FAIL), e);
@@ -189,17 +164,9 @@ public abstract class RpcBindingAdapter implements BindingAdapter<RpcBinding> {
     @Override
     public Object inBinding(Object contract, RpcBinding binding,
                             SofaRuntimeContext sofaRuntimeContext) {
-
-        ApplicationContext applicationContext = sofaRuntimeContext.getSofaRuntimeManager()
-            .getRootApplicationContext();
-        ConsumerConfigHelper consumerConfigHelper = applicationContext
-            .getBean(ConsumerConfigHelper.class);
-        ConsumerConfigContainer consumerConfigContainer = applicationContext
-            .getBean(ConsumerConfigContainer.class);
-
-        ConsumerConfig consumerConfig = consumerConfigHelper.getConsumerConfig((Contract) contract,
-            binding);
-        consumerConfigContainer.addConsumerConfig(binding, consumerConfig);
+        ConsumerConfig consumerConfig = SpringBridge.getConsumerConfigHelper().getConsumerConfig(
+            (Contract) contract, binding);
+        SpringBridge.getConsumerConfigContainer().addConsumerConfig(binding, consumerConfig);
 
         try {
             Object result = consumerConfig.refer();
@@ -221,11 +188,7 @@ public abstract class RpcBindingAdapter implements BindingAdapter<RpcBinding> {
     public void unInBinding(Object contract, RpcBinding binding,
                             SofaRuntimeContext sofaRuntimeContext) {
         try {
-            ApplicationContext applicationContext = sofaRuntimeContext.getSofaRuntimeManager()
-                .getRootApplicationContext();
-            ConsumerConfigContainer consumerConfigContainer = applicationContext
-                .getBean(ConsumerConfigContainer.class);
-            consumerConfigContainer.removeAndUnReferConsumerConfig(binding);
+            SpringBridge.getConsumerConfigContainer().removeAndUnReferConsumerConfig(binding);
         } catch (Exception e) {
             throw new ServiceRuntimeException(LogCodes.getLog(LogCodes.ERROR_PROXY_UNCOSUME_FAIL),
                 e);

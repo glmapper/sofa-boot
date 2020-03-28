@@ -94,7 +94,7 @@ public class SofaRuntimeAutoConfiguration {
 
     @Bean
     @ConditionalOnMissingBean
-    public static SofaRuntimeManager sofaRuntimeManager(@Value("${spring.application.name}") String appName,
+    public static SofaRuntimeContext sofaRuntimeContext(@Value("${spring.application.name}") String appName,
                                                         BindingConverterFactory bindingConverterFactory,
                                                         BindingAdapterFactory bindingAdapterFactory) {
         ClientFactoryInternal clientFactoryInternal = new ClientFactoryImpl();
@@ -109,12 +109,6 @@ public class SofaRuntimeAutoConfiguration {
             new ServiceClientImpl(sofaRuntimeManager.getSofaRuntimeContext(),
                 bindingConverterFactory, bindingAdapterFactory));
         SofaFramework.registerSofaRuntimeManager(sofaRuntimeManager);
-        return sofaRuntimeManager;
-    }
-
-    @Bean
-    @ConditionalOnMissingBean
-    public static SofaRuntimeContext sofaRuntimeContext(SofaRuntimeManager sofaRuntimeManager) {
         return sofaRuntimeManager.getSofaRuntimeContext();
     }
 
