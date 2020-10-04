@@ -27,6 +27,14 @@ import com.alipay.sofa.runtime.SofaRuntimeProperties;
 @ConfigurationProperties(SofaBootConstants.PREFIX)
 public class SofaRuntimeConfigurationProperties {
 
+    public boolean isJvmFilterEnable() {
+        return SofaRuntimeProperties.isJvmFilterEnable();
+    }
+
+    public void setJvmFilterEnable(boolean jvmFilterEnable) {
+        SofaRuntimeProperties.setJvmFilterEnable(jvmFilterEnable);
+    }
+
     public void setSkipJvmReferenceHealthCheck(boolean skipJvmReferenceHealthCheck) {
         SofaRuntimeProperties.setSkipJvmReferenceHealthCheck(this.getClass().getClassLoader(),
             skipJvmReferenceHealthCheck);
@@ -53,4 +61,14 @@ public class SofaRuntimeConfigurationProperties {
     public boolean isSkipJvmSerialize() {
         return SofaRuntimeProperties.isSkipJvmSerialize(this.getClass().getClassLoader());
     }
+
+    public void setSkipExtensionHealthCheck(boolean skipExtensionHealthCheck) {
+        SofaRuntimeProperties.setSkipExtensionHealthCheck(this.getClass().getClassLoader(),
+            skipExtensionHealthCheck);
+    }
+
+    public boolean isSkipExtensionHealthCheck() {
+        return SofaRuntimeProperties.isSkipExtensionHealthCheck(this.getClass().getClassLoader());
+    }
+
 }

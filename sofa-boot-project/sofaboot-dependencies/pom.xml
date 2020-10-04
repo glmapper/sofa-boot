@@ -8,12 +8,14 @@
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-starter-parent</artifactId>
         <version>2.1.13.RELEASE</version>
+        <!-- Add this to resolve to repository -->
+        <relativePath />
     </parent>
 
     <groupId>com.alipay.sofa</groupId>
     <artifactId>sofaboot-dependencies</artifactId>
     <packaging>pom</packaging>
-    <version>3.4.3</version>
+    <version>3.4.4.1-SNAPSHOT</version>
 
     <properties>
         <!--project-->
@@ -22,15 +24,15 @@
         <project.build.encoding>UTF-8</project.build.encoding>
         <project.build.encoding>UTF-8</project.build.encoding>
 
-        <sofa.boot.version>3.4.3</sofa.boot.version>
+        <sofa.boot.version>3.4.4.1-SNAPSHOT</sofa.boot.version>
 
         <!--starter-->
-        <sofa.ark.version>1.1.1</sofa.ark.version>
+        <sofa.ark.version>1.1.4</sofa.ark.version>
         <sofa.lookout.version>1.5.2</sofa.lookout.version>
 
         <!--core-->
         <tracer.core.version>3.0.8</tracer.core.version>
-        <rpc.core.version>5.7.3</rpc.core.version>
+        <rpc.core.version>5.7.6</rpc.core.version>
 
         <!--2rd lib dependency-->
         <sofa.common.tools.version>1.0.22</sofa.common.tools.version>
@@ -353,6 +355,26 @@
             <dependency>
                 <groupId>com.alipay.sofa</groupId>
                 <artifactId>sofa-ark-archive</artifactId>
+                <version>${sofa.ark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>sofa-ark-common</artifactId>
+                <version>${sofa.ark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>sofa-ark-tools</artifactId>
+                <version>${sofa.ark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>sofa-ark-api</artifactId>
+                <version>${sofa.ark.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alipay.sofa</groupId>
+                <artifactId>sofa-ark-container</artifactId>
                 <version>${sofa.ark.version}</version>
             </dependency>
             <dependency>

@@ -64,7 +64,7 @@ public class DynamicJvmServiceProxyFinder {
         return dynamicJvmServiceProxyFinder;
     }
 
-    public ServiceProxy findServiceProxy(ClassLoader clientClassloader, Contract contract) {
+    public ServiceComponent findServiceComponent(ClassLoader clientClassloader, Contract contract) {
         String interfaceType = contract.getInterfaceType().getCanonicalName();
         String uniqueId = contract.getUniqueId();
         for (SofaRuntimeManager sofaRuntimeManager : SofaFramework.getRuntimeSet()) {
@@ -106,18 +106,41 @@ public class DynamicJvmServiceProxyFinder {
             ServiceComponent serviceComponent = findServiceComponent(uniqueId, interfaceType,
                 sofaRuntimeManager.getComponentManager());
             if (serviceComponent != null) {
-                JvmBinding referenceJvmBinding = (JvmBinding) contract
-                    .getBinding(JvmBinding.JVM_BINDING_TYPE);
-                JvmBinding serviceJvmBinding = (JvmBinding) serviceComponent.getService()
-                    .getBinding(JvmBinding.JVM_BINDING_TYPE);
-                boolean serialize = referenceJvmBinding.getJvmBindingParam().isSerialize()
-                                    || serviceJvmBinding.getJvmBindingParam().isSerialize();
-                return new DynamicJvmServiceInvoker(clientClassloader,
-                    sofaRuntimeManager.getAppClassLoader(), serviceComponent.getService()
-                        .getTarget(), contract, biz.getIdentity(), serialize);
+                return serviceComponent;
             }
         }
         return null;
+    }
+
+    public ServiceProxy findServiceProxy(ClassLoader clientClassloader, Contract contract) {
+        ServiceComponent serviceComponent = findServiceComponent(clientClassloader, contract);
+        if (serviceComponent == null) {
+            return null;
+        }
+
+        SofaRuntimeManager sofaRuntimeManager = serviceComponent.getContext()
+            .getSofaRuntimeManager();
+        Biz biz = getBiz(sofaRuntimeManager);
+
+        if (biz == null) {
+            return null;
+        }
+
+        JvmBinding referenceJvmBinding = (JvmBinding) contract
+            .getBinding(JvmBinding.JVM_BINDING_TYPE);
+        JvmBinding serviceJvmBinding = (JvmBinding) serviceComponent.getService().getBinding(
+            JvmBinding.JVM_BINDING_TYPE);
+        boolean serialize;
+        if (serviceJvmBinding != null) {
+            serialize = referenceJvmBinding.getJvmBindingParam().isSerialize()
+                        || serviceJvmBinding.getJvmBindingParam().isSerialize();
+        } else {
+            // Service provider don't intend to publish JVM service, serialize is considered to be true in this case
+            serialize = true;
+        }
+        return new DynamicJvmServiceInvoker(clientClassloader,
+            sofaRuntimeManager.getAppClassLoader(), serviceComponent.getService().getTarget(),
+            contract, biz.getIdentity(), serialize);
     }
 
     /**
@@ -192,9 +215,12 @@ public class DynamicJvmServiceProxyFinder {
         @Override
         protected Object doInvoke(MethodInvocation invocation) throws Throwable {
             try {
-                SofaLogger
-                    .debug(">> Start in Cross App JVM service invoke, the service interface is  - "
-                           + getInterfaceType());
+
+                if (SofaLogger.isDebugEnabled()) {
+                    SofaLogger
+                        .debug(">> Start in Cross App JVM service invoke, the service interface is  - "
+                               + getInterfaceType());
+                }
 
                 if (getDynamicJvmServiceProxyFinder().bizManagerService != null) {
                     ReplayContext.setPlaceHolder();
@@ -245,12 +271,16 @@ public class DynamicJvmServiceProxyFinder {
 
         @Override
         protected void doCatch(MethodInvocation invocation, Throwable e, long startTime) {
-            SofaLogger.debug(getCommonInvocationLog("Exception", invocation, startTime));
+            if (SofaLogger.isDebugEnabled()) {
+                SofaLogger.debug(getCommonInvocationLog("Exception", invocation, startTime));
+            }
         }
 
         @Override
         protected void doFinally(MethodInvocation invocation, long startTime) {
-            SofaLogger.debug(getCommonInvocationLog("Finally", invocation, startTime));
+            if (SofaLogger.isDebugEnabled()) {
+                SofaLogger.debug(getCommonInvocationLog("Finally", invocation, startTime));
+            }
         }
 
         private Class getInterfaceType() {
