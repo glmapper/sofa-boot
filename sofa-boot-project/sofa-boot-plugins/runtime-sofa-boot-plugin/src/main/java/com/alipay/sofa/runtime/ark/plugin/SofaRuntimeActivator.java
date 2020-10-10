@@ -16,24 +16,52 @@
  */
 package com.alipay.sofa.runtime.ark.plugin;
 
+import com.alipay.sofa.ark.api.ArkConfigs;
+import com.alipay.sofa.ark.common.log.ArkLoggerFactory;
 import com.alipay.sofa.ark.spi.model.PluginContext;
 import com.alipay.sofa.ark.spi.service.PluginActivator;
 import com.alipay.sofa.ark.spi.service.event.EventAdminService;
+import com.alipay.sofa.ark.spi.web.EmbeddedServerService;
+import com.alipay.sofa.ark.web.embed.tomcat.EmbeddedServerServiceImpl;
 import com.alipay.sofa.runtime.SofaBizHealthCheckEventHandler;
 import com.alipay.sofa.runtime.SofaBizUninstallEventHandler;
 import com.alipay.sofa.runtime.invoke.DynamicJvmServiceProxyFinder;
 import com.alipay.sofa.runtime.spring.FinishStartupEventHandler;
+import org.apache.catalina.startup.Tomcat;
+import org.apache.logging.log4j.ThreadContext;
+import org.apache.logging.log4j.core.Logger;
+import org.apache.logging.log4j.core.LoggerContext;
+import org.apache.logging.log4j.core.config.Configurator;
+
+import java.io.File;
+import java.net.URI;
+import java.net.URL;
+import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.List;
 
 /**
  * @author qilong.zql
  * @since 2.5.0
  */
 public class SofaRuntimeActivator implements PluginActivator {
+    private static final String   LOGGING_PATH          = "logging.path";
+    private EmbeddedServerService embeddedServerService = new EmbeddedServerServiceImpl();
+
     @Override
     public void start(PluginContext context) {
-        registerEventHandler(context);
-        context.publishService(DynamicJvmServiceProxyFinder.class,
-            DynamicJvmServiceProxyFinder.getDynamicJvmServiceProxyFinder());
+        try {
+            LoggerContext loggerContext = initPluginLogger();
+            Logger logger = loggerContext.getLogger(SofaRuntimeActivator.class.getName());
+            registerEventHandler(context);
+            context.publishService(DynamicJvmServiceProxyFinder.class,
+                DynamicJvmServiceProxyFinder.getDynamicJvmServiceProxyFinder());
+            context.publishService(EmbeddedServerService.class, embeddedServerService);
+            logger.info("start runtime plugin success.");
+        } catch (Throwable ex) {
+            new RuntimeException("start runtime plugin error", ex);
+        }
+
     }
 
     private void registerEventHandler(final PluginContext context) {
@@ -44,8 +72,42 @@ public class SofaRuntimeActivator implements PluginActivator {
         eventAdminService.register(new FinishStartupEventHandler());
     }
 
+    private LoggerContext initPluginLogger() throws Exception {
+        // set Thread Context, reuse ark config
+        ThreadContext.put(
+            LOGGING_PATH,
+            ArkConfigs.getStringValue(LOGGING_PATH, System.getProperty("user.home")
+                                                    + File.separator + "logs"));
+        for (String key : ArkConfigs.keySet()) {
+            ThreadContext.put(key, ArkConfigs.getStringValue(key));
+        }
+
+        // initialize logger context
+        List<URI> configurations = new ArrayList<>();
+        ClassLoader pluginClassLoader = SofaRuntimeActivator.class.getClassLoader();
+        configurations.add(pluginClassLoader.getResource("runtime-log4j2.xml").toURI());
+        Enumeration<URL> log4j2ConfigurationFragments = pluginClassLoader
+            .getResources("META-INF/sofa-log4j2-configuration-fragment.xml");
+        while (log4j2ConfigurationFragments.hasMoreElements()) {
+            configurations.add(log4j2ConfigurationFragments.nextElement().toURI());
+        }
+        LoggerContext loggerContext = Configurator.initialize("runtime-log4j2", pluginClassLoader,
+            configurations, null);
+        return loggerContext;
+    }
+
     @Override
     public void stop(PluginContext context) {
-        // no op
+        Tomcat webServer = null;
+        if (embeddedServerService.getEmbedServer() instanceof Tomcat) {
+            webServer = (Tomcat) embeddedServerService.getEmbedServer();
+        }
+        if (webServer != null) {
+            try {
+                webServer.destroy();
+            } catch (Exception ex) {
+                ArkLoggerFactory.getDefaultLogger().error("Unable to stop embedded Tomcat", ex);
+            }
+        }
     }
 }

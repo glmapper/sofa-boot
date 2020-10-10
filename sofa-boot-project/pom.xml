@@ -5,7 +5,7 @@
     <parent>
         <artifactId>sofa-boot-build</artifactId>
         <groupId>com.alipay.sofa</groupId>
-        <version>3.4.4.1-SNAPSHOT</version>
+        <version>3.5.0-GL</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -25,6 +25,7 @@
         <module>sofaboot-dependencies</module>
         <!--imported or configured as parent by sofa boot module self-->
         <module>sofa-boot-parent</module>
+        <module>sofa-boot-support</module>
     </modules>
 
     <properties>

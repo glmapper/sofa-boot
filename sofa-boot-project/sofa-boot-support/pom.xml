@@ -11,6 +11,11 @@
 
     <groupId>com.alipay.sofa</groupId>
     <artifactId>sofa-boot-support</artifactId>
+    <packaging>pom</packaging>
+    <modules>
+        <module>sofa-runtime-maven-plugin</module>
+        <module>sofa-runtime-base-release</module>
+    </modules>
 
 
 </project>

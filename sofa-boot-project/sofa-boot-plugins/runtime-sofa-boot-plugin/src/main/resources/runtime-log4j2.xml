@@ -44,13 +44,6 @@
     </Appenders>
 
     <Loggers>
-        <AsyncLogger name="com.taobao.tair" additivity="false" level="info">
-            <AppenderRef ref="NO-USAGE-APPENDER"/>
-        </AsyncLogger>
-
-        <AsyncLogger name="com.taobao.vipserver" additivity="false" level="info">
-            <AppenderRef ref="NO-USAGE-APPENDER"/>
-        </AsyncLogger>
 
         <AsyncLogger name="org.springframework" additivity="false" level="info">
             <AppenderRef ref="ERROR-APPENDER"/>
