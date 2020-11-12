@@ -17,6 +17,11 @@
 package com.alipay.sofa.isle.test;
 
 import com.alipay.sofa.isle.spring.share.SofaModulePostProcessorShareManager;
+import com.alipay.sofa.runtime.SofaFramework;
+import com.alipay.sofa.runtime.client.impl.ClientFactoryImpl;
+import com.alipay.sofa.runtime.component.impl.StandardSofaRuntimeManager;
+import com.alipay.sofa.runtime.spi.client.ClientFactoryInternal;
+import com.alipay.sofa.runtime.spi.component.SofaRuntimeManager;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -123,6 +128,17 @@ public class FailModuleTest {
         public SofaModulePostProcessorShareManager sofaModulePostProcessorShareManager(ApplicationContext applicationContext) {
             return new SofaModulePostProcessorShareManager(
                 (AbstractApplicationContext) applicationContext);
+        }
+
+        @Bean(destroyMethod = "")
+        @ConditionalOnMissingBean
+        public static SofaRuntimeManager sofaRuntimeManager() {
+            ClientFactoryInternal clientFactoryInternal = new ClientFactoryImpl();
+            SofaRuntimeManager sofaRuntimeManager = new StandardSofaRuntimeManager(
+                "FailModuleTest", Thread.currentThread().getContextClassLoader(),
+                clientFactoryInternal);
+            SofaFramework.registerSofaRuntimeManager(sofaRuntimeManager);
+            return sofaRuntimeManager;
         }
     }
 }
